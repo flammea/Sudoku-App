@@ -3,7 +3,7 @@ import React from 'react';
 const Tile = props => {
     return (
         <div className={"Tile"}>
-	       <p>Sprawdzam, czy działa vol.2</p>
+	       <input type={'number'} min={"1"} max={"9"}/>
 	    </div>
 	)
  }

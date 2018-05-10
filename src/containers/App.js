@@ -1,6 +1,7 @@
 import React from 'react';
 import uuid from 'uuid';
-import Board from '../components/Board.js'
+import Board from '../components/Board.js';
+import sudoku from 'sudoku-umd';
 import { hot } from 'react-hot-loader';
 
 
@@ -8,8 +9,10 @@ class App extends React.Component {
    constructor(props) {
         super(props);
         this.state = {
-                }
-        };
+          initialBoard: '',
+          board: ''
+        }
+    };
 
     render() {
     
