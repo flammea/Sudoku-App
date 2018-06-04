@@ -1,11 +1,18 @@
 import React from 'react';
 
-const Tile = props => {
+const Tile = (props) => {
     return (
-        <div className={"Tile"}>
-	       <input type={'number'} min={"1"} max={"9"}/>
-	    </div>
-	)
- }
+        <input 
+            className="tile" 
+            type="number"  
+            min={"1"} 
+	        max={"9"}
+            value={props.value} 
+            id={props.id} 
+            onChange={(e) => props.onChange(e.target.value, e.target.id)}
+            disabled={props.initialBoard[props.id]} 
+        />
+    )
+}
 
-export default Tile
+export default Tile;
