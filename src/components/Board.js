@@ -1,30 +1,31 @@
 import React from 'react';
-import Tile from './Tile.js'
+import Tile from './Tile';
 
-class Board extends React.Component {
-	constructor(props) {
-	    super(props);
-	    this.state = {value: ''};
-
-	    this.handleChange = this.handleChange.bind(this);
-	    this.handleSubmit = this.handleSubmit.bind(this);
-  }
-
-  handleChange(event) {
-    this.setState({value: event.target.value});
-  }
-
-  handleSubmit(event) {
-    alert('A name was submitted: ' + this.state.value);
-    event.preventDefault();
-  }
+const Board = (props) => {
     return (
-        <div className={"Board"}>
-	       <p>Sprawdzam, czy działa</p>
-	       <Tile/>
-	    </div>
-	)
- }
+        <div className={props.board != "" ? "board" : null}>
+            {
+            props.board.map((tile, index) => {
+                if (tile === ".") {
+                    tile = "";
+                }
+                return (
+                    <Tile 
+                        value={tile} 
+                        key={index} 
+                        id={index} 
+                        onChange={props.onChange} 
+                        initialBoard={props.initialBoard.map(tile => {
+                            if (tile === ".") {
+                                tile = "";
+                            } 
+                            return tile;
+                        })}
+                    />
+                )
+            })}
+        </div>
+    )
+}
 
-
-export default Board
+export default Board;

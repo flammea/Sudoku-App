@@ -1,6 +1,7 @@
 import React from 'react';
 import uuid from 'uuid';
 import Board from '../components/Board.js';
+import Title from '../components/Title';
 import sudoku from 'sudoku-umd';
 import { hot } from 'react-hot-loader';
 
