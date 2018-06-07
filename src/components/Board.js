@@ -1,9 +1,10 @@
 import React from 'react';
 import Tile from './Tile';
+import styles from './Board.css';
 
 const Board = (props) => {
     return (
-        <div className={props.board != "" ? "board" : null}>
+        <div className={styles.Board}>
             {
             props.board.map((tile, index) => {
                 if (tile === ".") {

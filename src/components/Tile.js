@@ -1,9 +1,10 @@
 import React from 'react';
+import styles from './Tile.css'
 
 const Tile = (props) => {
     return (
         <input 
-            className="tile" 
+            className={styles.Tile}
             type="number"  
             min={"1"} 
 	        max={"9"}

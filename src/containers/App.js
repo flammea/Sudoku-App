@@ -1,8 +1,8 @@
 import React, {Component} from 'react';
 import Board from '../components/Board';
-import Title from '../components/Title';
 import Navigation from '../components/Navigation';
 import sudoku from 'sudoku-umd';
+import styles from './App.css';
 
 class App extends Component {
     constructor(props) {
@@ -116,8 +116,8 @@ class App extends Component {
 
     render() {
         return (
-            <div>
-                <Title/>
+            <div className={styles.App}>
+                <h1>Sudoku Game</h1>
                 <Navigation
                     newGameHandler={() => this.newGameHandler()}
                     startNewGame={(level) => this.startNewGame(level)}

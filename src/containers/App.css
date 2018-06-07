@@ -1,0 +1,15 @@
+@import url("https://fonts.googleapis.com/css?family=Sunflower:300");
+
+body {
+    box-sizing: border-box;
+    text-align: center;
+    font-family: 'Sunflower';
+}
+
+/*Styles for section title*/
+h1 {
+    font-size: 40px;
+    letter-spacing: 5px;
+    color: #6c5ce7;
+    font-family: "Sunflower";
+}

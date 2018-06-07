@@ -1,0 +1,45 @@
+/*Styles to make sudoku grid*/
+input:nth-child(3n+3){
+    border-right: 3px solid #636e72;
+}
+input:nth-child(n+19){
+    border-bottom: 3px solid #636e72;
+}
+input:nth-child(n+28){
+    border-bottom: 1px solid #636e72;
+}
+input:nth-child(n+46){
+    border-bottom: 3px solid #636e72;
+}
+input:nth-child(n+55){
+    border-bottom: 1px solid #636e72;
+}
+/*Styles for single input*/
+
+input {
+    text-align: center;
+    width: 50px;
+    height: 50px;
+    box-sizing: border-box;
+    border: 1px solid #636e72;
+    font-size: 18px;
+}
+
+input:hover {
+    background-color: #636e72;
+    color: #FFFFFF;
+    cursor: pointer;
+}
+input:disabled {
+    background-color: #00b894;
+    color: #FFFFFF;
+}
+input::-webkit-inner-spin-button, 
+input::-webkit-outer-spin-button { 
+    -webkit-appearance: none;
+    margin: 0;
+}
+input:disabled:hover {
+    background-color: #00b894;
+    cursor: auto;
+}

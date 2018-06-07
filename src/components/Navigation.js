@@ -1,7 +1,10 @@
 import React from 'react';
+import styles from './Navigation.css';
+
 
 const Navigation = (props) => {
     return (
+        <div className={styles.Navigation}>
         <div className="nav">
             <button onClick={() => props.newGameHandler()}>New Game</button>
             <button onClick={() => props.restartNewGame()}>Restart</button>
@@ -22,6 +25,7 @@ const Navigation = (props) => {
                     <button onClick={(e) => props.startNewGame(e.target.textContent)}>inhuman</button>
                 </div> : null
             }
+        </div>
         </div>
     )
 }
