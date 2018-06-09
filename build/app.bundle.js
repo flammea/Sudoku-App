@@ -60,26 +60,12 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 12);
+/******/ 	return __webpack_require__(__webpack_require__.s = 14);
 /******/ })
 /************************************************************************/
 /******/ ([
 /* 0 */
 /***/ ((function(module, exports, __webpack_require__) {
-
-"use strict";
-/* WEBPACK VAR INJECTION */(function(process) {
-
-if (process.env.NODE_ENV === 'production') {
-  module.exports = __webpack_require__(13);
-} else {
-  module.exports = __webpack_require__(14);
-}
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
-
-/***/ })),
-/* 1 */
-/***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
@@ -270,6 +256,20 @@ process.umask = function () {
     return 0;
 };
 
+/***/ })),
+/* 1 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(process) {
+
+if (process.env.NODE_ENV === 'production') {
+  module.exports = __webpack_require__(15);
+} else {
+  module.exports = __webpack_require__(16);
+}
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
+
 /***/ }),
 /* 2 */
 /***/ (function(module, exports, __webpack_require__) {
@@ -328,7 +328,7 @@ function invariant(condition, format, a, b, c, d, e, f) {
 }
 
 module.exports = invariant;
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
 /* 3 */
@@ -490,10 +490,478 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 module.exports = emptyObject;
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
 /* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+/*
+	MIT License http://www.opensource.org/licenses/mit-license.php
+	Author Tobias Koppers @sokra
+*/
+// css base code, injected by the css-loader
+module.exports = function (useSourceMap) {
+	var list = [];
+
+	// return the list of modules as css string
+	list.toString = function toString() {
+		return this.map((function (item) {
+			var content = cssWithMappingToString(item, useSourceMap);
+			if (item[2]) {
+				return "@media " + item[2] + "{" + content + "}";
+			} else {
+				return content;
+			}
+		})).join("");
+	};
+
+	// import a list of modules into the list
+	list.i = function (modules, mediaQuery) {
+		if (typeof modules === "string") modules = [[null, modules, ""]];
+		var alreadyImportedModules = {};
+		for (var i = 0; i < this.length; i++) {
+			var id = this[i][0];
+			if (typeof id === "number") alreadyImportedModules[id] = true;
+		}
+		for (i = 0; i < modules.length; i++) {
+			var item = modules[i];
+			// skip already imported module
+			// this implementation is not 100% perfect for weird media query combinations
+			//  when a module is imported multiple times with different media queries.
+			//  I hope this will never occur (Hey this way we have smaller bundles)
+			if (typeof item[0] !== "number" || !alreadyImportedModules[item[0]]) {
+				if (mediaQuery && !item[2]) {
+					item[2] = mediaQuery;
+				} else if (mediaQuery) {
+					item[2] = "(" + item[2] + ") and (" + mediaQuery + ")";
+				}
+				list.push(item);
+			}
+		}
+	};
+	return list;
+};
+
+function cssWithMappingToString(item, useSourceMap) {
+	var content = item[1] || '';
+	var cssMapping = item[3];
+	if (!cssMapping) {
+		return content;
+	}
+
+	if (useSourceMap && typeof btoa === 'function') {
+		var sourceMapping = toComment(cssMapping);
+		var sourceURLs = cssMapping.sources.map((function (source) {
+			return '/*# sourceURL=' + cssMapping.sourceRoot + source + ' */';
+		}));
+
+		return [content].concat(sourceURLs).concat([sourceMapping]).join('\n');
+	}
+
+	return [content].join('\n');
+}
+
+// Adapted from convert-source-map (MIT)
+function toComment(sourceMap) {
+	// eslint-disable-next-line no-undef
+	var base64 = btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap))));
+	var data = 'sourceMappingURL=data:application/json;charset=utf-8;base64,' + base64;
+
+	return '/*# ' + data + ' */';
+}
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/*
+	MIT License http://www.opensource.org/licenses/mit-license.php
+	Author Tobias Koppers @sokra
+*/
+
+var stylesInDom = {};
+
+var	memoize = function (fn) {
+	var memo;
+
+	return function () {
+		if (typeof memo === "undefined") memo = fn.apply(this, arguments);
+		return memo;
+	};
+};
+
+var isOldIE = memoize((function () {
+	// Test for IE <= 9 as proposed by Browserhacks
+	// @see http://browserhacks.com/#hack-e71d8692f65334173fee715c222cb805
+	// Tests for existence of standard globals is to allow style-loader
+	// to operate correctly into non-standard environments
+	// @see https://github.com/webpack-contrib/style-loader/issues/177
+	return window && document && document.all && !window.atob;
+}));
+
+var getTarget = function (target) {
+  return document.querySelector(target);
+};
+
+var getElement = (function (fn) {
+	var memo = {};
+
+	return function(target) {
+                // If passing function in options, then use it for resolve "head" element.
+                // Useful for Shadow Root style i.e
+                // {
+                //   insertInto: function () { return document.querySelector("#foo").shadowRoot }
+                // }
+                if (typeof target === 'function') {
+                        return target();
+                }
+                if (typeof memo[target] === "undefined") {
+			var styleTarget = getTarget.call(this, target);
+			// Special case to return head of iframe instead of iframe itself
+			if (window.HTMLIFrameElement && styleTarget instanceof window.HTMLIFrameElement) {
+				try {
+					// This will throw an exception if access to iframe is blocked
+					// due to cross-origin restrictions
+					styleTarget = styleTarget.contentDocument.head;
+				} catch(e) {
+					styleTarget = null;
+				}
+			}
+			memo[target] = styleTarget;
+		}
+		return memo[target]
+	};
+})();
+
+var singleton = null;
+var	singletonCounter = 0;
+var	stylesInsertedAtTop = [];
+
+var	fixUrls = __webpack_require__(32);
+
+module.exports = function(list, options) {
+	if (typeof DEBUG !== "undefined" && DEBUG) {
+		if (typeof document !== "object") throw new Error("The style-loader cannot be used in a non-browser environment");
+	}
+
+	options = options || {};
+
+	options.attrs = typeof options.attrs === "object" ? options.attrs : {};
+
+	// Force single-tag solution on IE6-9, which has a hard limit on the # of <style>
+	// tags it will allow on a page
+	if (!options.singleton && typeof options.singleton !== "boolean") options.singleton = isOldIE();
+
+	// By default, add <style> tags to the <head> element
+        if (!options.insertInto) options.insertInto = "head";
+
+	// By default, add <style> tags to the bottom of the target
+	if (!options.insertAt) options.insertAt = "bottom";
+
+	var styles = listToStyles(list, options);
+
+	addStylesToDom(styles, options);
+
+	return function update (newList) {
+		var mayRemove = [];
+
+		for (var i = 0; i < styles.length; i++) {
+			var item = styles[i];
+			var domStyle = stylesInDom[item.id];
+
+			domStyle.refs--;
+			mayRemove.push(domStyle);
+		}
+
+		if(newList) {
+			var newStyles = listToStyles(newList, options);
+			addStylesToDom(newStyles, options);
+		}
+
+		for (var i = 0; i < mayRemove.length; i++) {
+			var domStyle = mayRemove[i];
+
+			if(domStyle.refs === 0) {
+				for (var j = 0; j < domStyle.parts.length; j++) domStyle.parts[j]();
+
+				delete stylesInDom[domStyle.id];
+			}
+		}
+	};
+};
+
+function addStylesToDom (styles, options) {
+	for (var i = 0; i < styles.length; i++) {
+		var item = styles[i];
+		var domStyle = stylesInDom[item.id];
+
+		if(domStyle) {
+			domStyle.refs++;
+
+			for(var j = 0; j < domStyle.parts.length; j++) {
+				domStyle.parts[j](item.parts[j]);
+			}
+
+			for(; j < item.parts.length; j++) {
+				domStyle.parts.push(addStyle(item.parts[j], options));
+			}
+		} else {
+			var parts = [];
+
+			for(var j = 0; j < item.parts.length; j++) {
+				parts.push(addStyle(item.parts[j], options));
+			}
+
+			stylesInDom[item.id] = {id: item.id, refs: 1, parts: parts};
+		}
+	}
+}
+
+function listToStyles (list, options) {
+	var styles = [];
+	var newStyles = {};
+
+	for (var i = 0; i < list.length; i++) {
+		var item = list[i];
+		var id = options.base ? item[0] + options.base : item[0];
+		var css = item[1];
+		var media = item[2];
+		var sourceMap = item[3];
+		var part = {css: css, media: media, sourceMap: sourceMap};
+
+		if(!newStyles[id]) styles.push(newStyles[id] = {id: id, parts: [part]});
+		else newStyles[id].parts.push(part);
+	}
+
+	return styles;
+}
+
+function insertStyleElement (options, style) {
+	var target = getElement(options.insertInto)
+
+	if (!target) {
+		throw new Error("Couldn't find a style target. This probably means that the value for the 'insertInto' parameter is invalid.");
+	}
+
+	var lastStyleElementInsertedAtTop = stylesInsertedAtTop[stylesInsertedAtTop.length - 1];
+
+	if (options.insertAt === "top") {
+		if (!lastStyleElementInsertedAtTop) {
+			target.insertBefore(style, target.firstChild);
+		} else if (lastStyleElementInsertedAtTop.nextSibling) {
+			target.insertBefore(style, lastStyleElementInsertedAtTop.nextSibling);
+		} else {
+			target.appendChild(style);
+		}
+		stylesInsertedAtTop.push(style);
+	} else if (options.insertAt === "bottom") {
+		target.appendChild(style);
+	} else if (typeof options.insertAt === "object" && options.insertAt.before) {
+		var nextSibling = getElement(options.insertInto + " " + options.insertAt.before);
+		target.insertBefore(style, nextSibling);
+	} else {
+		throw new Error("[Style Loader]\n\n Invalid value for parameter 'insertAt' ('options.insertAt') found.\n Must be 'top', 'bottom', or Object.\n (https://github.com/webpack-contrib/style-loader#insertat)\n");
+	}
+}
+
+function removeStyleElement (style) {
+	if (style.parentNode === null) return false;
+	style.parentNode.removeChild(style);
+
+	var idx = stylesInsertedAtTop.indexOf(style);
+	if(idx >= 0) {
+		stylesInsertedAtTop.splice(idx, 1);
+	}
+}
+
+function createStyleElement (options) {
+	var style = document.createElement("style");
+
+	if(options.attrs.type === undefined) {
+		options.attrs.type = "text/css";
+	}
+
+	addAttrs(style, options.attrs);
+	insertStyleElement(options, style);
+
+	return style;
+}
+
+function createLinkElement (options) {
+	var link = document.createElement("link");
+
+	if(options.attrs.type === undefined) {
+		options.attrs.type = "text/css";
+	}
+	options.attrs.rel = "stylesheet";
+
+	addAttrs(link, options.attrs);
+	insertStyleElement(options, link);
+
+	return link;
+}
+
+function addAttrs (el, attrs) {
+	Object.keys(attrs).forEach((function (key) {
+		el.setAttribute(key, attrs[key]);
+	}));
+}
+
+function addStyle (obj, options) {
+	var style, update, remove, result;
+
+	// If a transform function was defined, run it on the css
+	if (options.transform && obj.css) {
+	    result = options.transform(obj.css);
+
+	    if (result) {
+	    	// If transform returns a value, use that instead of the original css.
+	    	// This allows running runtime transformations on the css.
+	    	obj.css = result;
+	    } else {
+	    	// If the transform function returns a falsy value, don't add this css.
+	    	// This allows conditional loading of css
+	    	return function() {
+	    		// noop
+	    	};
+	    }
+	}
+
+	if (options.singleton) {
+		var styleIndex = singletonCounter++;
+
+		style = singleton || (singleton = createStyleElement(options));
+
+		update = applyToSingletonTag.bind(null, style, styleIndex, false);
+		remove = applyToSingletonTag.bind(null, style, styleIndex, true);
+
+	} else if (
+		obj.sourceMap &&
+		typeof URL === "function" &&
+		typeof URL.createObjectURL === "function" &&
+		typeof URL.revokeObjectURL === "function" &&
+		typeof Blob === "function" &&
+		typeof btoa === "function"
+	) {
+		style = createLinkElement(options);
+		update = updateLink.bind(null, style, options);
+		remove = function () {
+			removeStyleElement(style);
+
+			if(style.href) URL.revokeObjectURL(style.href);
+		};
+	} else {
+		style = createStyleElement(options);
+		update = applyToTag.bind(null, style);
+		remove = function () {
+			removeStyleElement(style);
+		};
+	}
+
+	update(obj);
+
+	return function updateStyle (newObj) {
+		if (newObj) {
+			if (
+				newObj.css === obj.css &&
+				newObj.media === obj.media &&
+				newObj.sourceMap === obj.sourceMap
+			) {
+				return;
+			}
+
+			update(obj = newObj);
+		} else {
+			remove();
+		}
+	};
+}
+
+var replaceText = (function () {
+	var textStore = [];
+
+	return function (index, replacement) {
+		textStore[index] = replacement;
+
+		return textStore.filter(Boolean).join('\n');
+	};
+})();
+
+function applyToSingletonTag (style, index, remove, obj) {
+	var css = remove ? "" : obj.css;
+
+	if (style.styleSheet) {
+		style.styleSheet.cssText = replaceText(index, css);
+	} else {
+		var cssNode = document.createTextNode(css);
+		var childNodes = style.childNodes;
+
+		if (childNodes[index]) style.removeChild(childNodes[index]);
+
+		if (childNodes.length) {
+			style.insertBefore(cssNode, childNodes[index]);
+		} else {
+			style.appendChild(cssNode);
+		}
+	}
+}
+
+function applyToTag (style, obj) {
+	var css = obj.css;
+	var media = obj.media;
+
+	if(media) {
+		style.setAttribute("media", media)
+	}
+
+	if(style.styleSheet) {
+		style.styleSheet.cssText = css;
+	} else {
+		while(style.firstChild) {
+			style.removeChild(style.firstChild);
+		}
+
+		style.appendChild(document.createTextNode(css));
+	}
+}
+
+function updateLink (link, options, obj) {
+	var css = obj.css;
+	var sourceMap = obj.sourceMap;
+
+	/*
+		If convertToAbsoluteUrls isn't defined, but sourcemaps are enabled
+		and there is no publicPath defined then lets turn convertToAbsoluteUrls
+		on by default.  Otherwise default to the convertToAbsoluteUrls option
+		directly
+	*/
+	var autoFixUrls = options.convertToAbsoluteUrls === undefined && sourceMap;
+
+	if (options.convertToAbsoluteUrls || autoFixUrls) {
+		css = fixUrls(css);
+	}
+
+	if (sourceMap) {
+		// http://stackoverflow.com/a/26603875
+		css += "\n/*# sourceMappingURL=data:application/json;base64," + btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))) + " */";
+	}
+
+	var blob = new Blob([css], { type: "text/css" });
+
+	var oldSrc = link.href;
+
+	link.href = URL.createObjectURL(blob);
+
+	if(oldSrc) URL.revokeObjectURL(oldSrc);
+}
+
+
+/***/ }),
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -559,10 +1027,10 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 module.exports = warning;
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 7 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -579,8 +1047,8 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 if (process.env.NODE_ENV !== 'production') {
   var invariant = __webpack_require__(2);
-  var warning = __webpack_require__(6);
-  var ReactPropTypesSecret = __webpack_require__(15);
+  var warning = __webpack_require__(8);
+  var ReactPropTypesSecret = __webpack_require__(17);
   var loggedTypeFailures = {};
 }
 
@@ -627,10 +1095,10 @@ function checkPropTypes(typeSpecs, values, location, componentName, getStack) {
 }
 
 module.exports = checkPropTypes;
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 8 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -669,7 +1137,7 @@ var ExecutionEnvironment = {
 module.exports = ExecutionEnvironment;
 
 /***/ }),
-/* 9 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -712,7 +1180,7 @@ function getActiveElement(doc) /*?DOMElement*/{
 module.exports = getActiveElement;
 
 /***/ }),
-/* 10 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -785,7 +1253,7 @@ function shallowEqual(objA, objB) {
 module.exports = shallowEqual;
 
 /***/ }),
-/* 11 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -800,7 +1268,7 @@ module.exports = shallowEqual;
  * 
  */
 
-var isTextNode = __webpack_require__(18);
+var isTextNode = __webpack_require__(20);
 
 /*eslint-disable no-bitwise */
 
@@ -828,21 +1296,21 @@ function containsNode(outerNode, innerNode) {
 module.exports = containsNode;
 
 /***/ }),
-/* 12 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var _react = __webpack_require__(0);
+var _react = __webpack_require__(1);
 
 var _react2 = _interopRequireDefault(_react);
 
-var _reactDom = __webpack_require__(16);
+var _reactDom = __webpack_require__(18);
 
 var _reactDom2 = _interopRequireDefault(_reactDom);
 
-var _App = __webpack_require__(25);
+var _App = __webpack_require__(27);
 
 var _App2 = _interopRequireDefault(_App);
 
@@ -851,7 +1319,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 _reactDom2.default.render(_react2.default.createElement(_App2.default, null), document.getElementById('app'));
 
 /***/ }),
-/* 13 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -986,7 +1454,7 @@ var W = { Children: { map: function map(a, b, e) {
     Y = X && W || X;module.exports = Y["default"] ? Y["default"] : Y;
 
 /***/ }),
-/* 14 */
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1010,9 +1478,9 @@ if (process.env.NODE_ENV !== "production") {
     var _assign = __webpack_require__(4);
     var invariant = __webpack_require__(2);
     var emptyObject = __webpack_require__(5);
-    var warning = __webpack_require__(6);
+    var warning = __webpack_require__(8);
     var emptyFunction = __webpack_require__(3);
-    var checkPropTypes = __webpack_require__(7);
+    var checkPropTypes = __webpack_require__(9);
 
     // TODO: this is special because it gets imported during build.
 
@@ -2400,10 +2868,10 @@ if (process.env.NODE_ENV !== "production") {
     module.exports = react;
   })();
 }
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 15 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2421,7 +2889,7 @@ var ReactPropTypesSecret = 'SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED';
 module.exports = ReactPropTypesSecret;
 
 /***/ }),
-/* 16 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2456,14 +2924,14 @@ if (process.env.NODE_ENV === 'production') {
   // DCE check should happen before ReactDOM bundle executes so that
   // DevTools can report bad minification during injection.
   checkDCE();
-  module.exports = __webpack_require__(17);
+  module.exports = __webpack_require__(19);
 } else {
-  module.exports = __webpack_require__(20);
+  module.exports = __webpack_require__(22);
 }
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 17 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2484,13 +2952,13 @@ if (process.env.NODE_ENV === 'production') {
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 var ba = __webpack_require__(2),
-    ea = __webpack_require__(0),
-    m = __webpack_require__(8),
+    ea = __webpack_require__(1),
+    m = __webpack_require__(10),
     A = __webpack_require__(4),
     C = __webpack_require__(3),
-    fa = __webpack_require__(9),
-    ha = __webpack_require__(10),
-    ja = __webpack_require__(11),
+    fa = __webpack_require__(11),
+    ha = __webpack_require__(12),
+    ja = __webpack_require__(13),
     ka = __webpack_require__(5);
 function D(a) {
   for (var b = arguments.length - 1, c = "http://reactjs.org/docs/error-decoder.html?invariant\x3d" + a, d = 0; d < b; d++) {
@@ -4699,7 +5167,7 @@ X.injectIntoDevTools({ findFiberByHostInstance: Ua, bundleType: 0, version: "16.
     Ig = Hg && Gg || Hg;module.exports = Ig["default"] ? Ig["default"] : Ig;
 
 /***/ }),
-/* 18 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4714,7 +5182,7 @@ X.injectIntoDevTools({ findFiberByHostInstance: Ua, bundleType: 0, version: "16.
  * @typechecks
  */
 
-var isNode = __webpack_require__(19);
+var isNode = __webpack_require__(21);
 
 /**
  * @param {*} object The object to check.
@@ -4727,7 +5195,7 @@ function isTextNode(object) {
 module.exports = isTextNode;
 
 /***/ }),
-/* 19 */
+/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4758,7 +5226,7 @@ function isNode(object) {
 module.exports = isNode;
 
 /***/ }),
-/* 20 */
+/* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4769,7 +5237,7 @@ module.exports = isNode;
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
- */var _typeof=typeof Symbol==="function"&&typeof Symbol.iterator==="symbol"?function(obj){return typeof obj;}:function(obj){return obj&&typeof Symbol==="function"&&obj.constructor===Symbol&&obj!==Symbol.prototype?"symbol":typeof obj;};if(process.env.NODE_ENV!=="production"){(function(){'use strict';var invariant=__webpack_require__(2);var React=__webpack_require__(0);var warning=__webpack_require__(6);var ExecutionEnvironment=__webpack_require__(8);var _assign=__webpack_require__(4);var emptyFunction=__webpack_require__(3);var checkPropTypes=__webpack_require__(7);var getActiveElement=__webpack_require__(9);var shallowEqual=__webpack_require__(10);var containsNode=__webpack_require__(11);var emptyObject=__webpack_require__(5);var hyphenateStyleName=__webpack_require__(21);var camelizeStyleName=__webpack_require__(23);// Relying on the `invariant()` implementation lets us
+ */var _typeof=typeof Symbol==="function"&&typeof Symbol.iterator==="symbol"?function(obj){return typeof obj;}:function(obj){return obj&&typeof Symbol==="function"&&obj.constructor===Symbol&&obj!==Symbol.prototype?"symbol":typeof obj;};if(process.env.NODE_ENV!=="production"){(function(){'use strict';var invariant=__webpack_require__(2);var React=__webpack_require__(1);var warning=__webpack_require__(8);var ExecutionEnvironment=__webpack_require__(10);var _assign=__webpack_require__(4);var emptyFunction=__webpack_require__(3);var checkPropTypes=__webpack_require__(9);var getActiveElement=__webpack_require__(11);var shallowEqual=__webpack_require__(12);var containsNode=__webpack_require__(13);var emptyObject=__webpack_require__(5);var hyphenateStyleName=__webpack_require__(23);var camelizeStyleName=__webpack_require__(25);// Relying on the `invariant()` implementation lets us
 // have preserve the format and params in the www builds.
 !React?invariant(false,'ReactDOM was loaded before React. Make sure you load the React package before loading ReactDOM.'):void 0;var invokeGuardedCallback=function invokeGuardedCallback(name,func,context,a,b,c,d,e,f){this._hasCaughtError=false;this._caughtError=null;var funcArgs=Array.prototype.slice.call(arguments,3);try{func.apply(context,funcArgs);}catch(error){this._caughtError=error;this._hasCaughtError=true;}};{// In DEV mode, we swap out invokeGuardedCallback for a special version
 // that plays more nicely with the browser's DevTools. The idea is to preserve
@@ -7685,10 +8153,10 @@ if(navigator.userAgent.indexOf('Chrome')>-1&&navigator.userAgent.indexOf('Edge')
 if(/^(https?|file):$/.test(protocol)){console.info('%cDownload the React DevTools '+'for a better development experience: '+'https://fb.me/react-devtools'+(protocol==='file:'?'\nYou might need to use a local HTTP server (instead of file://): '+'https://fb.me/react-devtools-faq':''),'font-weight:bold');}}}}var ReactDOM$2=Object.freeze({default:ReactDOM});var ReactDOM$3=ReactDOM$2&&ReactDOM||ReactDOM$2;// TODO: decide on the top-level export form.
 // This is hacky but makes it work with both Rollup and Jest.
 var reactDom=ReactDOM$3['default']?ReactDOM$3['default']:ReactDOM$3;module.exports=reactDom;})();}
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 21 */
+/* 23 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7703,7 +8171,7 @@ var reactDom=ReactDOM$3['default']?ReactDOM$3['default']:ReactDOM$3;module.expor
 
 
 
-var hyphenate = __webpack_require__(22);
+var hyphenate = __webpack_require__(24);
 
 var msPattern = /^ms-/;
 
@@ -7730,7 +8198,7 @@ function hyphenateStyleName(string) {
 module.exports = hyphenateStyleName;
 
 /***/ }),
-/* 22 */
+/* 24 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7766,7 +8234,7 @@ function hyphenate(string) {
 module.exports = hyphenate;
 
 /***/ }),
-/* 23 */
+/* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7781,7 +8249,7 @@ module.exports = hyphenate;
 
 
 
-var camelize = __webpack_require__(24);
+var camelize = __webpack_require__(26);
 
 var msPattern = /^-ms-/;
 
@@ -7809,7 +8277,7 @@ function camelizeStyleName(string) {
 module.exports = camelizeStyleName;
 
 /***/ }),
-/* 24 */
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7844,7 +8312,7 @@ function camelize(string) {
 module.exports = camelize;
 
 /***/ }),
-/* 25 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7856,27 +8324,23 @@ Object.defineProperty(exports, "__esModule", {
 
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
-var _react = __webpack_require__(0);
+var _react = __webpack_require__(1);
 
 var _react2 = _interopRequireDefault(_react);
 
-var _Board = __webpack_require__(26);
+var _Board = __webpack_require__(28);
 
 var _Board2 = _interopRequireDefault(_Board);
 
-var _Title = __webpack_require__(28);
-
-var _Title2 = _interopRequireDefault(_Title);
-
-var _Navigation = __webpack_require__(29);
+var _Navigation = __webpack_require__(35);
 
 var _Navigation2 = _interopRequireDefault(_Navigation);
 
-var _sudokuUmd = __webpack_require__(30);
+var _sudokuUmd = __webpack_require__(38);
 
 var _sudokuUmd2 = _interopRequireDefault(_sudokuUmd);
 
-var _App = __webpack_require__(31);
+var _App = __webpack_require__(39);
 
 var _App2 = _interopRequireDefault(_App);
 
@@ -8025,7 +8489,11 @@ var App = (function (_Component) {
             return _react2.default.createElement(
                 'div',
                 { className: _App2.default.App },
-                _react2.default.createElement(_Title2.default, null),
+                _react2.default.createElement(
+                    'h1',
+                    null,
+                    'Sudoku Game'
+                ),
                 _react2.default.createElement(_Navigation2.default, {
                     newGameHandler: function newGameHandler() {
                         return _this2.newGameHandler();
@@ -8069,7 +8537,7 @@ var App = (function (_Component) {
 exports.default = App;
 
 /***/ }),
-/* 26 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8079,20 +8547,24 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _react = __webpack_require__(0);
+var _react = __webpack_require__(1);
 
 var _react2 = _interopRequireDefault(_react);
 
-var _Tile = __webpack_require__(27);
+var _Tile = __webpack_require__(29);
 
 var _Tile2 = _interopRequireDefault(_Tile);
+
+var _Board = __webpack_require__(33);
+
+var _Board2 = _interopRequireDefault(_Board);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var Board = function Board(props) {
     return _react2.default.createElement(
         'div',
-        { className: props.board != "" ? "board" : null },
+        { className: _Board2.default.Board },
         props.board.map((function (tile, index) {
             if (tile === ".") {
                 tile = "";
@@ -8116,7 +8588,7 @@ var Board = function Board(props) {
 exports.default = Board;
 
 /***/ }),
-/* 27 */
+/* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8126,16 +8598,20 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _react = __webpack_require__(0);
+var _react = __webpack_require__(1);
 
 var _react2 = _interopRequireDefault(_react);
+
+var _Tile = __webpack_require__(30);
+
+var _Tile2 = _interopRequireDefault(_Tile);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var Tile = function Tile(props) {
-    return _react2.default.createElement("input", {
-        className: "tile",
-        type: "number",
+    return _react2.default.createElement('input', {
+        className: _Tile2.default.Tile,
+        type: 'number',
         min: "1",
         max: "9",
         value: props.value,
@@ -8150,38 +8626,232 @@ var Tile = function Tile(props) {
 exports.default = Tile;
 
 /***/ }),
-/* 28 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+
+var content = __webpack_require__(31);
+
+if(typeof content === 'string') content = [[module.i, content, '']];
+
+var transform;
+var insertInto;
 
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
 
-var _react = __webpack_require__(0);
+var options = {"hmr":true}
 
-var _react2 = _interopRequireDefault(_react);
+options.transform = transform
+options.insertInto = undefined;
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+var update = __webpack_require__(7)(content, options);
 
-var Title = function Title() {
-    return _react2.default.createElement(
-        "div",
-        { className: "title" },
-        _react2.default.createElement(
-            "h1",
-            null,
-            "Sudoku Game"
-        )
-    );
-};
+if(content.locals) module.exports = content.locals;
 
-exports.default = Title;
+if(false) {
+	module.hot.accept("!!../../node_modules/css-loader/index.js??ref--1-1!./Tile.css", (function() {
+		var newContent = require("!!../../node_modules/css-loader/index.js??ref--1-1!./Tile.css");
+
+		if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+
+		var locals = (function(a, b) {
+			var key, idx = 0;
+
+			for(key in a) {
+				if(!b || a[key] !== b[key]) return false;
+				idx++;
+			}
+
+			for(key in b) idx--;
+
+			return idx === 0;
+		}(content.locals, newContent.locals));
+
+		if(!locals) throw new Error('Aborting CSS HMR due to changed css-modules locals.');
+
+		update(newContent);
+	}));
+
+	module.hot.dispose((function() { update(); }));
+}
 
 /***/ }),
-/* 29 */
+/* 31 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(6)(false);
+// imports
+
+
+// module
+exports.push([module.i, "/*Styles to make sudoku grid*/\r\ninput:nth-child(3n+3){\r\n    border-right: 3px solid #636e72;\r\n}\r\ninput:nth-child(n+19){\r\n    border-bottom: 3px solid #636e72;\r\n}\r\ninput:nth-child(n+28){\r\n    border-bottom: 1px solid #636e72;\r\n}\r\ninput:nth-child(n+46){\r\n    border-bottom: 3px solid #636e72;\r\n}\r\ninput:nth-child(n+55){\r\n    border-bottom: 1px solid #636e72;\r\n}\r\n/*Styles for single input*/\r\n\r\ninput {\r\n    text-align: center;\r\n    width: 50px;\r\n    height: 50px;\r\n    box-sizing: border-box;\r\n    border: 1px solid #636e72;\r\n    font-size: 18px;\r\n}\r\n\r\ninput:hover {\r\n    background-color: #636e72;\r\n    color: #FFFFFF;\r\n    cursor: pointer;\r\n}\r\ninput:disabled {\r\n    background-color: #00b894;\r\n    color: #FFFFFF;\r\n}\r\ninput::-webkit-inner-spin-button, \r\ninput::-webkit-outer-spin-button { \r\n    -webkit-appearance: none;\r\n    margin: 0;\r\n}\r\ninput:disabled:hover {\r\n    background-color: #00b894;\r\n    cursor: auto;\r\n}", ""]);
+
+// exports
+
+
+/***/ }),
+/* 32 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+/**
+ * When source maps are enabled, `style-loader` uses a link element with a data-uri to
+ * embed the css on the page. This breaks all relative urls because now they are relative to a
+ * bundle instead of the current page.
+ *
+ * One solution is to only use full urls, but that may be impossible.
+ *
+ * Instead, this function "fixes" the relative urls to be absolute according to the current page location.
+ *
+ * A rudimentary test suite is located at `test/fixUrls.js` and can be run via the `npm test` command.
+ *
+ */
+
+module.exports = function (css) {
+	// get current location
+	var location = typeof window !== "undefined" && window.location;
+
+	if (!location) {
+		throw new Error("fixUrls requires window.location");
+	}
+
+	// blank or null?
+	if (!css || typeof css !== "string") {
+		return css;
+	}
+
+	var baseUrl = location.protocol + "//" + location.host;
+	var currentDir = baseUrl + location.pathname.replace(/\/[^\/]*$/, "/");
+
+	// convert each url(...)
+	/*
+ This regular expression is just a way to recursively match brackets within
+ a string.
+ 	 /url\s*\(  = Match on the word "url" with any whitespace after it and then a parens
+    (  = Start a capturing group
+      (?:  = Start a non-capturing group
+          [^)(]  = Match anything that isn't a parentheses
+          |  = OR
+          \(  = Match a start parentheses
+              (?:  = Start another non-capturing groups
+                  [^)(]+  = Match anything that isn't a parentheses
+                  |  = OR
+                  \(  = Match a start parentheses
+                      [^)(]*  = Match anything that isn't a parentheses
+                  \)  = Match a end parentheses
+              )  = End Group
+              *\) = Match anything and then a close parens
+          )  = Close non-capturing group
+          *  = Match anything
+       )  = Close capturing group
+  \)  = Match a close parens
+ 	 /gi  = Get all matches, not the first.  Be case insensitive.
+  */
+	var fixedCss = css.replace(/url\s*\(((?:[^)(]|\((?:[^)(]+|\([^)(]*\))*\))*)\)/gi, (function (fullMatch, origUrl) {
+		// strip quotes (if they exist)
+		var unquotedOrigUrl = origUrl.trim().replace(/^"(.*)"$/, (function (o, $1) {
+			return $1;
+		})).replace(/^'(.*)'$/, (function (o, $1) {
+			return $1;
+		}));
+
+		// already a full url? no change
+		if (/^(#|data:|http:\/\/|https:\/\/|file:\/\/\/|\s*$)/i.test(unquotedOrigUrl)) {
+			return fullMatch;
+		}
+
+		// convert the url to a full url
+		var newUrl;
+
+		if (unquotedOrigUrl.indexOf("//") === 0) {
+			//TODO: should we add protocol?
+			newUrl = unquotedOrigUrl;
+		} else if (unquotedOrigUrl.indexOf("/") === 0) {
+			// path should be relative to the base url
+			newUrl = baseUrl + unquotedOrigUrl; // already starts with '/'
+		} else {
+			// path should be relative to current directory
+			newUrl = currentDir + unquotedOrigUrl.replace(/^\.\//, ""); // Strip leading './'
+		}
+
+		// send back the fixed url(...)
+		return "url(" + JSON.stringify(newUrl) + ")";
+	}));
+
+	// send back the fixed css
+	return fixedCss;
+};
+
+/***/ }),
+/* 33 */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+var content = __webpack_require__(34);
+
+if(typeof content === 'string') content = [[module.i, content, '']];
+
+var transform;
+var insertInto;
+
+
+
+var options = {"hmr":true}
+
+options.transform = transform
+options.insertInto = undefined;
+
+var update = __webpack_require__(7)(content, options);
+
+if(content.locals) module.exports = content.locals;
+
+if(false) {
+	module.hot.accept("!!../../node_modules/css-loader/index.js??ref--1-1!./Board.css", (function() {
+		var newContent = require("!!../../node_modules/css-loader/index.js??ref--1-1!./Board.css");
+
+		if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+
+		var locals = (function(a, b) {
+			var key, idx = 0;
+
+			for(key in a) {
+				if(!b || a[key] !== b[key]) return false;
+				idx++;
+			}
+
+			for(key in b) idx--;
+
+			return idx === 0;
+		}(content.locals, newContent.locals));
+
+		if(!locals) throw new Error('Aborting CSS HMR due to changed css-modules locals.');
+
+		update(newContent);
+	}));
+
+	module.hot.dispose((function() { update(); }));
+}
+
+/***/ }),
+/* 34 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(6)(false);
+// imports
+
+
+// module
+exports.push([module.i, "/*Styles for section board*/\r\n._1EkDFwFP3qUn0X4Wa-767W {\r\n    display: flex;\r\n    flex-wrap: wrap;\r\n    width: 450px;\r\n    border: 3px solid #636e72;\r\n    margin: 20px auto;\r\n}\r\nbutton {\r\n    margin-right: 50px;\r\n    margin-bottom: 20px;\r\n    width: 100px;\r\n    height: 30px;\r\n    border-radius: 10px;\r\n    border: 2px solid #6c5ce7;\r\n    color: #6c5ce7;\r\n    background-color: #FFFFFF;\r\n    text-transform: uppercase;\r\n    font-family: 'Sunflower';\r\n    font-size: 15px;\r\n    transition: 0.3s;\r\n}\r\n button:hover {\r\n    background-color: #6c5ce7;\r\n    color: #FFFFFF;\r\n    cursor: pointer;\r\n}\r\nbutton:focus {\r\n    outline: none;\r\n}\r\n", ""]);
+
+// exports
+exports.locals = {
+	"Board": "_1EkDFwFP3qUn0X4Wa-767W"
+};
+
+/***/ }),
+/* 35 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8191,111 +8861,185 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _react = __webpack_require__(0);
+var _react = __webpack_require__(1);
 
 var _react2 = _interopRequireDefault(_react);
+
+var _Navigation = __webpack_require__(36);
+
+var _Navigation2 = _interopRequireDefault(_Navigation);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var Navigation = function Navigation(props) {
     return _react2.default.createElement(
-        "div",
-        { className: "nav" },
+        'div',
+        { className: _Navigation2.default.Navigation },
         _react2.default.createElement(
-            "button",
-            { onClick: function onClick() {
-                    return props.newGameHandler();
-                } },
-            "New Game"
-        ),
-        _react2.default.createElement(
-            "button",
-            { onClick: function onClick() {
-                    return props.restartNewGame();
-                } },
-            "Restart"
-        ),
-        _react2.default.createElement(
-            "button",
-            { onClick: function onClick() {
-                    return props.solveSudoku();
-                } },
-            "Solve"
-        ),
-        _react2.default.createElement(
-            "button",
-            { onClick: function onClick() {
-                    return props.checkSudoku();
-                } },
-            "Check"
-        ),
-        props.error ? _react2.default.createElement(
-            "div",
-            null,
+            'div',
+            { className: 'nav' },
             _react2.default.createElement(
-                "p",
-                { className: "error-msg" },
-                props.error
-            )
-        ) : null,
-        props.newGameClicked ? _react2.default.createElement(
-            "div",
-            null,
+                'button',
+                { onClick: function onClick() {
+                        return props.newGameHandler();
+                    } },
+                'New Game'
+            ),
             _react2.default.createElement(
-                "h1",
+                'button',
+                { onClick: function onClick() {
+                        return props.restartNewGame();
+                    } },
+                'Restart'
+            ),
+            _react2.default.createElement(
+                'button',
+                { onClick: function onClick() {
+                        return props.solveSudoku();
+                    } },
+                'Solve'
+            ),
+            _react2.default.createElement(
+                'button',
+                { onClick: function onClick() {
+                        return props.checkSudoku();
+                    } },
+                'Check'
+            ),
+            props.error ? _react2.default.createElement(
+                'div',
                 null,
-                "Select level:"
-            ),
-            _react2.default.createElement(
-                "button",
-                { onClick: function onClick(e) {
-                        return props.startNewGame(e.target.textContent);
-                    } },
-                "easy"
-            ),
-            _react2.default.createElement(
-                "button",
-                { onClick: function onClick(e) {
-                        return props.startNewGame(e.target.textContent);
-                    } },
-                "medium"
-            ),
-            _react2.default.createElement(
-                "button",
-                { onClick: function onClick(e) {
-                        return props.startNewGame(e.target.textContent);
-                    } },
-                "hard"
-            ),
-            _react2.default.createElement(
-                "button",
-                { onClick: function onClick(e) {
-                        return props.startNewGame(e.target.textContent);
-                    } },
-                "very-hard"
-            ),
-            _react2.default.createElement(
-                "button",
-                { onClick: function onClick(e) {
-                        return props.startNewGame(e.target.textContent);
-                    } },
-                "insane"
-            ),
-            _react2.default.createElement(
-                "button",
-                { onClick: function onClick(e) {
-                        return props.startNewGame(e.target.textContent);
-                    } },
-                "inhuman"
-            )
-        ) : null
+                _react2.default.createElement(
+                    'p',
+                    { className: 'error-msg' },
+                    props.error
+                )
+            ) : null,
+            props.newGameClicked ? _react2.default.createElement(
+                'div',
+                null,
+                _react2.default.createElement(
+                    'h1',
+                    null,
+                    'Select level:'
+                ),
+                _react2.default.createElement(
+                    'button',
+                    { onClick: function onClick(e) {
+                            return props.startNewGame(e.target.textContent);
+                        } },
+                    'easy'
+                ),
+                _react2.default.createElement(
+                    'button',
+                    { onClick: function onClick(e) {
+                            return props.startNewGame(e.target.textContent);
+                        } },
+                    'medium'
+                ),
+                _react2.default.createElement(
+                    'button',
+                    { onClick: function onClick(e) {
+                            return props.startNewGame(e.target.textContent);
+                        } },
+                    'hard'
+                ),
+                _react2.default.createElement(
+                    'button',
+                    { onClick: function onClick(e) {
+                            return props.startNewGame(e.target.textContent);
+                        } },
+                    'very-hard'
+                ),
+                _react2.default.createElement(
+                    'button',
+                    { onClick: function onClick(e) {
+                            return props.startNewGame(e.target.textContent);
+                        } },
+                    'insane'
+                ),
+                _react2.default.createElement(
+                    'button',
+                    { onClick: function onClick(e) {
+                            return props.startNewGame(e.target.textContent);
+                        } },
+                    'inhuman'
+                )
+            ) : null
+        )
     );
 };
 
 exports.default = Navigation;
 
 /***/ }),
-/* 30 */
+/* 36 */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+var content = __webpack_require__(37);
+
+if(typeof content === 'string') content = [[module.i, content, '']];
+
+var transform;
+var insertInto;
+
+
+
+var options = {"hmr":true}
+
+options.transform = transform
+options.insertInto = undefined;
+
+var update = __webpack_require__(7)(content, options);
+
+if(content.locals) module.exports = content.locals;
+
+if(false) {
+	module.hot.accept("!!../../node_modules/css-loader/index.js??ref--1-1!./Navigation.css", (function() {
+		var newContent = require("!!../../node_modules/css-loader/index.js??ref--1-1!./Navigation.css");
+
+		if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+
+		var locals = (function(a, b) {
+			var key, idx = 0;
+
+			for(key in a) {
+				if(!b || a[key] !== b[key]) return false;
+				idx++;
+			}
+
+			for(key in b) idx--;
+
+			return idx === 0;
+		}(content.locals, newContent.locals));
+
+		if(!locals) throw new Error('Aborting CSS HMR due to changed css-modules locals.');
+
+		update(newContent);
+	}));
+
+	module.hot.dispose((function() { update(); }));
+}
+
+/***/ }),
+/* 37 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(6)(false);
+// imports
+exports.push([module.i, "@import url(https://fonts.googleapis.com/css?family=Sunflower:300);", ""]);
+
+// module
+exports.push([module.i, "/*Styles for section navigation*/\r\n._3Bgl_S4VxS81oN1SPIl5dm button {\r\n    margin-right: 50px;\r\n    margin-bottom: 20px;\r\n    width: 100px;\r\n    height: 30px;\r\n    border-radius: 10px;\r\n    border: 2px solid #6c5ce7;\r\n    color: #6c5ce7;\r\n    background-color: #FFFFFF;\r\n    text-transform: uppercase;\r\n    font-family: 'Sunflower';\r\n    font-size: 15px;\r\n    transition: 0.3s;\r\n}\r\n button:hover {\r\n    background-color: #6c5ce7;\r\n    color: #FFFFFF;\r\n    cursor: pointer;\r\n}\r\nbutton:focus {\r\n    outline: none;\r\n}\r\np {\r\n    font-size: 18px;\r\n    display: inline-block;\r\n    width: 450px;\r\n    padding: 10px 0;\r\n    border: 2px solid #fd79a8;\r\n}\r\n", ""]);
+
+// exports
+exports.locals = {
+	"Navigation": "_3Bgl_S4VxS81oN1SPIl5dm"
+};
+
+/***/ }),
+/* 38 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9106,11 +9850,11 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 }));
 
 /***/ }),
-/* 31 */
+/* 39 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
-var content = __webpack_require__(32);
+var content = __webpack_require__(40);
 
 if(typeof content === 'string') content = [[module.i, content, '']];
 
@@ -9124,7 +9868,7 @@ var options = {"hmr":true}
 options.transform = transform
 options.insertInto = undefined;
 
-var update = __webpack_require__(34)(content, options);
+var update = __webpack_require__(7)(content, options);
 
 if(content.locals) module.exports = content.locals;
 
@@ -9156,588 +9900,18 @@ if(false) {
 }
 
 /***/ }),
-/* 32 */
-/***/ (function(module, exports, __webpack_require__) {
+/* 40 */
+/***/ ((function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(33)(false);
+exports = module.exports = __webpack_require__(6)(false);
 // imports
 exports.push([module.i, "@import url(https://fonts.googleapis.com/css?family=Sunflower:300);", ""]);
 
 // module
-exports.push([module.i, "body {\r\n    box-sizing: border-box;\r\n    text-align: center;\r\n    font-family: 'Itim', cursive;\r\n}\r\n/*Styles for section title*/\r\n.MmM2MqN-vZGcvgtsxH6mS {\r\n    margin: 100px 0;\r\n    color: #e84393;\r\n}\r\n\r\n.MmM2MqN-vZGcvgtsxH6mS > h1 {\r\n    font-size: 40px;\r\n    letter-spacing: 5px;\r\n    color: #e84393;\r\n    font-family: \"Sunflower\";\r\n}\r\n\r\n/*Styles for section navigation*/\r\n._1IdiQ8EZLdvBuCzwk7Bt_t button,\r\n._1FoOCfq1v1jX1fqDlh8Qpk {\r\n    margin-right: 50px;\r\n    margin-bottom: 20px;\r\n    width: 130px;\r\n    height: 50px;\r\n    border-radius: 10px;\r\n    border: 2px solid cadetblue;\r\n    text-transform: uppercase;\r\n    font-family: 'Itim', cursive;\r\n    font-size: 18px;\r\n    transition: 0.3s;\r\n}\r\n._1IdiQ8EZLdvBuCzwk7Bt_t button:hover,\r\n._1FoOCfq1v1jX1fqDlh8Qpk:hover {\r\n    background-color: cadetblue;\r\n    color: white;\r\n    cursor: pointer;\r\n}\r\n._1IdiQ8EZLdvBuCzwk7Bt_t button:focus,\r\n._1FoOCfq1v1jX1fqDlh8Qpk:focus {\r\n    outline: none;\r\n}\r\n._1DRkF4bXS_1x5rdauRcLQ9 {\r\n    font-size: 18px;\r\n    display: inline-block;\r\n    width: 450px;\r\n    padding: 10px 0;\r\n    border: 2px solid cadetblue;\r\n}\r\n/*Styles for section board*/\r\n.fCjvu1njkTyd6hCa2EBIi {\r\n    display: flex;\r\n    flex-wrap: wrap;\r\n    width: 450px;\r\n    border: 3px solid;\r\n    border-right: 1px solid black;\r\n    margin: 20px auto;\r\n}\r\n._1FoOCfq1v1jX1fqDlh8Qpk {\r\n    margin: 0 auto;\r\n}\r\n/*Styles to make sudoku grid*/\r\n._3w5FAZeJPRMRy7aaNwyH_v:nth-child(3n+3){\r\n    border-right: 3px solid black;\r\n}\r\n._3w5FAZeJPRMRy7aaNwyH_v:nth-child(n+19){\r\n    border-bottom: 3px solid black;\r\n}\r\n._3w5FAZeJPRMRy7aaNwyH_v:nth-child(n+28){\r\n    border-bottom: 1px solid black;\r\n}\r\n._3w5FAZeJPRMRy7aaNwyH_v:nth-child(n+46){\r\n    border-bottom: 3px solid black;\r\n}\r\n._3w5FAZeJPRMRy7aaNwyH_v:nth-child(n+55){\r\n    border-bottom: 1px solid black;\r\n}\r\n/*Styles for single input*/\r\n._3w5FAZeJPRMRy7aaNwyH_v {\r\n    text-align: center;\r\n    width: 50px;\r\n    height: 50px;\r\n    box-sizing: border-box;\r\n    border: 1px solid black;\r\n    font-size: 18px;\r\n}\r\ninput:hover {\r\n    background-color: aliceblue;\r\n    cursor: pointer;\r\n}\r\ninput:disabled {\r\n    background-color: cadetblue;\r\n    color: black;\r\n}\r\ninput::-webkit-inner-spin-button, \r\ninput::-webkit-outer-spin-button { \r\n    -webkit-appearance: none;\r\n    margin: 0;\r\n}\r\ninput:disabled:hover {\r\n    background-color: cadetblue;\r\n    cursor: auto;\r\n}", ""]);
+exports.push([module.i, "body {\r\n    box-sizing: border-box;\r\n    text-align: center;\r\n    font-family: 'Sunflower';\r\n}\r\n\r\n/*Styles for section title*/\r\nh1 {\r\n    font-size: 40px;\r\n    letter-spacing: 5px;\r\n    color: #6c5ce7;\r\n    font-family: \"Sunflower\";\r\n}\r\n", ""]);
 
 // exports
-exports.locals = {
-	"title": "MmM2MqN-vZGcvgtsxH6mS",
-	"nav": "_1IdiQ8EZLdvBuCzwk7Bt_t",
-	"undo-button": "_1FoOCfq1v1jX1fqDlh8Qpk",
-	"error-msg": "_1DRkF4bXS_1x5rdauRcLQ9",
-	"board": "fCjvu1njkTyd6hCa2EBIi",
-	"tile": "_3w5FAZeJPRMRy7aaNwyH_v"
-};
 
-/***/ }),
-/* 33 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-/*
-	MIT License http://www.opensource.org/licenses/mit-license.php
-	Author Tobias Koppers @sokra
-*/
-// css base code, injected by the css-loader
-module.exports = function (useSourceMap) {
-	var list = [];
-
-	// return the list of modules as css string
-	list.toString = function toString() {
-		return this.map((function (item) {
-			var content = cssWithMappingToString(item, useSourceMap);
-			if (item[2]) {
-				return "@media " + item[2] + "{" + content + "}";
-			} else {
-				return content;
-			}
-		})).join("");
-	};
-
-	// import a list of modules into the list
-	list.i = function (modules, mediaQuery) {
-		if (typeof modules === "string") modules = [[null, modules, ""]];
-		var alreadyImportedModules = {};
-		for (var i = 0; i < this.length; i++) {
-			var id = this[i][0];
-			if (typeof id === "number") alreadyImportedModules[id] = true;
-		}
-		for (i = 0; i < modules.length; i++) {
-			var item = modules[i];
-			// skip already imported module
-			// this implementation is not 100% perfect for weird media query combinations
-			//  when a module is imported multiple times with different media queries.
-			//  I hope this will never occur (Hey this way we have smaller bundles)
-			if (typeof item[0] !== "number" || !alreadyImportedModules[item[0]]) {
-				if (mediaQuery && !item[2]) {
-					item[2] = mediaQuery;
-				} else if (mediaQuery) {
-					item[2] = "(" + item[2] + ") and (" + mediaQuery + ")";
-				}
-				list.push(item);
-			}
-		}
-	};
-	return list;
-};
-
-function cssWithMappingToString(item, useSourceMap) {
-	var content = item[1] || '';
-	var cssMapping = item[3];
-	if (!cssMapping) {
-		return content;
-	}
-
-	if (useSourceMap && typeof btoa === 'function') {
-		var sourceMapping = toComment(cssMapping);
-		var sourceURLs = cssMapping.sources.map((function (source) {
-			return '/*# sourceURL=' + cssMapping.sourceRoot + source + ' */';
-		}));
-
-		return [content].concat(sourceURLs).concat([sourceMapping]).join('\n');
-	}
-
-	return [content].join('\n');
-}
-
-// Adapted from convert-source-map (MIT)
-function toComment(sourceMap) {
-	// eslint-disable-next-line no-undef
-	var base64 = btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap))));
-	var data = 'sourceMappingURL=data:application/json;charset=utf-8;base64,' + base64;
-
-	return '/*# ' + data + ' */';
-}
-
-/***/ }),
-/* 34 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/*
-	MIT License http://www.opensource.org/licenses/mit-license.php
-	Author Tobias Koppers @sokra
-*/
-
-var stylesInDom = {};
-
-var	memoize = function (fn) {
-	var memo;
-
-	return function () {
-		if (typeof memo === "undefined") memo = fn.apply(this, arguments);
-		return memo;
-	};
-};
-
-var isOldIE = memoize((function () {
-	// Test for IE <= 9 as proposed by Browserhacks
-	// @see http://browserhacks.com/#hack-e71d8692f65334173fee715c222cb805
-	// Tests for existence of standard globals is to allow style-loader
-	// to operate correctly into non-standard environments
-	// @see https://github.com/webpack-contrib/style-loader/issues/177
-	return window && document && document.all && !window.atob;
-}));
-
-var getTarget = function (target) {
-  return document.querySelector(target);
-};
-
-var getElement = (function (fn) {
-	var memo = {};
-
-	return function(target) {
-                // If passing function in options, then use it for resolve "head" element.
-                // Useful for Shadow Root style i.e
-                // {
-                //   insertInto: function () { return document.querySelector("#foo").shadowRoot }
-                // }
-                if (typeof target === 'function') {
-                        return target();
-                }
-                if (typeof memo[target] === "undefined") {
-			var styleTarget = getTarget.call(this, target);
-			// Special case to return head of iframe instead of iframe itself
-			if (window.HTMLIFrameElement && styleTarget instanceof window.HTMLIFrameElement) {
-				try {
-					// This will throw an exception if access to iframe is blocked
-					// due to cross-origin restrictions
-					styleTarget = styleTarget.contentDocument.head;
-				} catch(e) {
-					styleTarget = null;
-				}
-			}
-			memo[target] = styleTarget;
-		}
-		return memo[target]
-	};
-})();
-
-var singleton = null;
-var	singletonCounter = 0;
-var	stylesInsertedAtTop = [];
-
-var	fixUrls = __webpack_require__(35);
-
-module.exports = function(list, options) {
-	if (typeof DEBUG !== "undefined" && DEBUG) {
-		if (typeof document !== "object") throw new Error("The style-loader cannot be used in a non-browser environment");
-	}
-
-	options = options || {};
-
-	options.attrs = typeof options.attrs === "object" ? options.attrs : {};
-
-	// Force single-tag solution on IE6-9, which has a hard limit on the # of <style>
-	// tags it will allow on a page
-	if (!options.singleton && typeof options.singleton !== "boolean") options.singleton = isOldIE();
-
-	// By default, add <style> tags to the <head> element
-        if (!options.insertInto) options.insertInto = "head";
-
-	// By default, add <style> tags to the bottom of the target
-	if (!options.insertAt) options.insertAt = "bottom";
-
-	var styles = listToStyles(list, options);
-
-	addStylesToDom(styles, options);
-
-	return function update (newList) {
-		var mayRemove = [];
-
-		for (var i = 0; i < styles.length; i++) {
-			var item = styles[i];
-			var domStyle = stylesInDom[item.id];
-
-			domStyle.refs--;
-			mayRemove.push(domStyle);
-		}
-
-		if(newList) {
-			var newStyles = listToStyles(newList, options);
-			addStylesToDom(newStyles, options);
-		}
-
-		for (var i = 0; i < mayRemove.length; i++) {
-			var domStyle = mayRemove[i];
-
-			if(domStyle.refs === 0) {
-				for (var j = 0; j < domStyle.parts.length; j++) domStyle.parts[j]();
-
-				delete stylesInDom[domStyle.id];
-			}
-		}
-	};
-};
-
-function addStylesToDom (styles, options) {
-	for (var i = 0; i < styles.length; i++) {
-		var item = styles[i];
-		var domStyle = stylesInDom[item.id];
-
-		if(domStyle) {
-			domStyle.refs++;
-
-			for(var j = 0; j < domStyle.parts.length; j++) {
-				domStyle.parts[j](item.parts[j]);
-			}
-
-			for(; j < item.parts.length; j++) {
-				domStyle.parts.push(addStyle(item.parts[j], options));
-			}
-		} else {
-			var parts = [];
-
-			for(var j = 0; j < item.parts.length; j++) {
-				parts.push(addStyle(item.parts[j], options));
-			}
-
-			stylesInDom[item.id] = {id: item.id, refs: 1, parts: parts};
-		}
-	}
-}
-
-function listToStyles (list, options) {
-	var styles = [];
-	var newStyles = {};
-
-	for (var i = 0; i < list.length; i++) {
-		var item = list[i];
-		var id = options.base ? item[0] + options.base : item[0];
-		var css = item[1];
-		var media = item[2];
-		var sourceMap = item[3];
-		var part = {css: css, media: media, sourceMap: sourceMap};
-
-		if(!newStyles[id]) styles.push(newStyles[id] = {id: id, parts: [part]});
-		else newStyles[id].parts.push(part);
-	}
-
-	return styles;
-}
-
-function insertStyleElement (options, style) {
-	var target = getElement(options.insertInto)
-
-	if (!target) {
-		throw new Error("Couldn't find a style target. This probably means that the value for the 'insertInto' parameter is invalid.");
-	}
-
-	var lastStyleElementInsertedAtTop = stylesInsertedAtTop[stylesInsertedAtTop.length - 1];
-
-	if (options.insertAt === "top") {
-		if (!lastStyleElementInsertedAtTop) {
-			target.insertBefore(style, target.firstChild);
-		} else if (lastStyleElementInsertedAtTop.nextSibling) {
-			target.insertBefore(style, lastStyleElementInsertedAtTop.nextSibling);
-		} else {
-			target.appendChild(style);
-		}
-		stylesInsertedAtTop.push(style);
-	} else if (options.insertAt === "bottom") {
-		target.appendChild(style);
-	} else if (typeof options.insertAt === "object" && options.insertAt.before) {
-		var nextSibling = getElement(options.insertInto + " " + options.insertAt.before);
-		target.insertBefore(style, nextSibling);
-	} else {
-		throw new Error("[Style Loader]\n\n Invalid value for parameter 'insertAt' ('options.insertAt') found.\n Must be 'top', 'bottom', or Object.\n (https://github.com/webpack-contrib/style-loader#insertat)\n");
-	}
-}
-
-function removeStyleElement (style) {
-	if (style.parentNode === null) return false;
-	style.parentNode.removeChild(style);
-
-	var idx = stylesInsertedAtTop.indexOf(style);
-	if(idx >= 0) {
-		stylesInsertedAtTop.splice(idx, 1);
-	}
-}
-
-function createStyleElement (options) {
-	var style = document.createElement("style");
-
-	if(options.attrs.type === undefined) {
-		options.attrs.type = "text/css";
-	}
-
-	addAttrs(style, options.attrs);
-	insertStyleElement(options, style);
-
-	return style;
-}
-
-function createLinkElement (options) {
-	var link = document.createElement("link");
-
-	if(options.attrs.type === undefined) {
-		options.attrs.type = "text/css";
-	}
-	options.attrs.rel = "stylesheet";
-
-	addAttrs(link, options.attrs);
-	insertStyleElement(options, link);
-
-	return link;
-}
-
-function addAttrs (el, attrs) {
-	Object.keys(attrs).forEach((function (key) {
-		el.setAttribute(key, attrs[key]);
-	}));
-}
-
-function addStyle (obj, options) {
-	var style, update, remove, result;
-
-	// If a transform function was defined, run it on the css
-	if (options.transform && obj.css) {
-	    result = options.transform(obj.css);
-
-	    if (result) {
-	    	// If transform returns a value, use that instead of the original css.
-	    	// This allows running runtime transformations on the css.
-	    	obj.css = result;
-	    } else {
-	    	// If the transform function returns a falsy value, don't add this css.
-	    	// This allows conditional loading of css
-	    	return function() {
-	    		// noop
-	    	};
-	    }
-	}
-
-	if (options.singleton) {
-		var styleIndex = singletonCounter++;
-
-		style = singleton || (singleton = createStyleElement(options));
-
-		update = applyToSingletonTag.bind(null, style, styleIndex, false);
-		remove = applyToSingletonTag.bind(null, style, styleIndex, true);
-
-	} else if (
-		obj.sourceMap &&
-		typeof URL === "function" &&
-		typeof URL.createObjectURL === "function" &&
-		typeof URL.revokeObjectURL === "function" &&
-		typeof Blob === "function" &&
-		typeof btoa === "function"
-	) {
-		style = createLinkElement(options);
-		update = updateLink.bind(null, style, options);
-		remove = function () {
-			removeStyleElement(style);
-
-			if(style.href) URL.revokeObjectURL(style.href);
-		};
-	} else {
-		style = createStyleElement(options);
-		update = applyToTag.bind(null, style);
-		remove = function () {
-			removeStyleElement(style);
-		};
-	}
-
-	update(obj);
-
-	return function updateStyle (newObj) {
-		if (newObj) {
-			if (
-				newObj.css === obj.css &&
-				newObj.media === obj.media &&
-				newObj.sourceMap === obj.sourceMap
-			) {
-				return;
-			}
-
-			update(obj = newObj);
-		} else {
-			remove();
-		}
-	};
-}
-
-var replaceText = (function () {
-	var textStore = [];
-
-	return function (index, replacement) {
-		textStore[index] = replacement;
-
-		return textStore.filter(Boolean).join('\n');
-	};
-})();
-
-function applyToSingletonTag (style, index, remove, obj) {
-	var css = remove ? "" : obj.css;
-
-	if (style.styleSheet) {
-		style.styleSheet.cssText = replaceText(index, css);
-	} else {
-		var cssNode = document.createTextNode(css);
-		var childNodes = style.childNodes;
-
-		if (childNodes[index]) style.removeChild(childNodes[index]);
-
-		if (childNodes.length) {
-			style.insertBefore(cssNode, childNodes[index]);
-		} else {
-			style.appendChild(cssNode);
-		}
-	}
-}
-
-function applyToTag (style, obj) {
-	var css = obj.css;
-	var media = obj.media;
-
-	if(media) {
-		style.setAttribute("media", media)
-	}
-
-	if(style.styleSheet) {
-		style.styleSheet.cssText = css;
-	} else {
-		while(style.firstChild) {
-			style.removeChild(style.firstChild);
-		}
-
-		style.appendChild(document.createTextNode(css));
-	}
-}
-
-function updateLink (link, options, obj) {
-	var css = obj.css;
-	var sourceMap = obj.sourceMap;
-
-	/*
-		If convertToAbsoluteUrls isn't defined, but sourcemaps are enabled
-		and there is no publicPath defined then lets turn convertToAbsoluteUrls
-		on by default.  Otherwise default to the convertToAbsoluteUrls option
-		directly
-	*/
-	var autoFixUrls = options.convertToAbsoluteUrls === undefined && sourceMap;
-
-	if (options.convertToAbsoluteUrls || autoFixUrls) {
-		css = fixUrls(css);
-	}
-
-	if (sourceMap) {
-		// http://stackoverflow.com/a/26603875
-		css += "\n/*# sourceMappingURL=data:application/json;base64," + btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))) + " */";
-	}
-
-	var blob = new Blob([css], { type: "text/css" });
-
-	var oldSrc = link.href;
-
-	link.href = URL.createObjectURL(blob);
-
-	if(oldSrc) URL.revokeObjectURL(oldSrc);
-}
-
-
-/***/ }),
-/* 35 */
-/***/ ((function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-/**
- * When source maps are enabled, `style-loader` uses a link element with a data-uri to
- * embed the css on the page. This breaks all relative urls because now they are relative to a
- * bundle instead of the current page.
- *
- * One solution is to only use full urls, but that may be impossible.
- *
- * Instead, this function "fixes" the relative urls to be absolute according to the current page location.
- *
- * A rudimentary test suite is located at `test/fixUrls.js` and can be run via the `npm test` command.
- *
- */
-
-module.exports = function (css) {
-	// get current location
-	var location = typeof window !== "undefined" && window.location;
-
-	if (!location) {
-		throw new Error("fixUrls requires window.location");
-	}
-
-	// blank or null?
-	if (!css || typeof css !== "string") {
-		return css;
-	}
-
-	var baseUrl = location.protocol + "//" + location.host;
-	var currentDir = baseUrl + location.pathname.replace(/\/[^\/]*$/, "/");
-
-	// convert each url(...)
-	/*
- This regular expression is just a way to recursively match brackets within
- a string.
- 	 /url\s*\(  = Match on the word "url" with any whitespace after it and then a parens
-    (  = Start a capturing group
-      (?:  = Start a non-capturing group
-          [^)(]  = Match anything that isn't a parentheses
-          |  = OR
-          \(  = Match a start parentheses
-              (?:  = Start another non-capturing groups
-                  [^)(]+  = Match anything that isn't a parentheses
-                  |  = OR
-                  \(  = Match a start parentheses
-                      [^)(]*  = Match anything that isn't a parentheses
-                  \)  = Match a end parentheses
-              )  = End Group
-              *\) = Match anything and then a close parens
-          )  = Close non-capturing group
-          *  = Match anything
-       )  = Close capturing group
-  \)  = Match a close parens
- 	 /gi  = Get all matches, not the first.  Be case insensitive.
-  */
-	var fixedCss = css.replace(/url\s*\(((?:[^)(]|\((?:[^)(]+|\([^)(]*\))*\))*)\)/gi, (function (fullMatch, origUrl) {
-		// strip quotes (if they exist)
-		var unquotedOrigUrl = origUrl.trim().replace(/^"(.*)"$/, (function (o, $1) {
-			return $1;
-		})).replace(/^'(.*)'$/, (function (o, $1) {
-			return $1;
-		}));
-
-		// already a full url? no change
-		if (/^(#|data:|http:\/\/|https:\/\/|file:\/\/\/|\s*$)/i.test(unquotedOrigUrl)) {
-			return fullMatch;
-		}
-
-		// convert the url to a full url
-		var newUrl;
-
-		if (unquotedOrigUrl.indexOf("//") === 0) {
-			//TODO: should we add protocol?
-			newUrl = unquotedOrigUrl;
-		} else if (unquotedOrigUrl.indexOf("/") === 0) {
-			// path should be relative to the base url
-			newUrl = baseUrl + unquotedOrigUrl; // already starts with '/'
-		} else {
-			// path should be relative to current directory
-			newUrl = currentDir + unquotedOrigUrl.replace(/^\.\//, ""); // Strip leading './'
-		}
-
-		// send back the fixed url(...)
-		return "url(" + JSON.stringify(newUrl) + ")";
-	}));
-
-	// send back the fixed css
-	return fixedCss;
-};
 
 /***/ }))
 /******/ ]);
