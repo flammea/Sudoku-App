@@ -1,4 +1,7 @@
-/*Styles to make sudoku grid*/
+/*
+GRID
+*/
+
 input:nth-child(3n+3){
     border-right: 3px solid #636e72;
 }
@@ -14,7 +17,9 @@ input:nth-child(n+46){
 input:nth-child(n+55){
     border-bottom: 1px solid #636e72;
 }
-/*Styles for single input*/
+/*
+INPUT
+*/
 
 input {
     text-align: center;
