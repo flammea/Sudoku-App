@@ -5,7 +5,6 @@ import styles from './Navigation.css';
 const Navigation = (props) => {
     return (
         <div className={styles.Navigation}>
-            <div className="nav">
                 <button onClick={() => props.newGameHandler()}>New Game</button>
                 <button onClick={() => props.restartNewGame()}>Restart</button>
                 <button onClick={() => props.solveSudoku()}>Solve</button>
@@ -27,7 +26,6 @@ const Navigation = (props) => {
                         <button onClick={(e) => props.startNewGame(e.target.textContent)}>Inhuman</button>
                     </div> : null
                 }
-            </div>
         </div>
     )
 }

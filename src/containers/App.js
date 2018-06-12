@@ -83,25 +83,6 @@ class App extends Component {
         this.localStorageHandler(array, allMoves);
     }
 
-    undoHandler() {
-        var movesArrayLength = this.state.movesArray.length;
-        if (movesArrayLength) {
-            var removedTileId = this.state.movesArray[movesArrayLength-1].id;
-            var newMovesArray = this.state.movesArray.slice(0, movesArrayLength-1);
-            var prevTileValueArray = newMovesArray.filter(move => move.id === removedTileId);
-
-            var prevTileValue = (prevTileValueArray.length > 0 && prevTileValueArray[prevTileValueArray.length-1].value !== "") ? 
-            prevTileValueArray[prevTileValueArray.length-1].value : ".";
-
-            var newBoard = this.state.board.split('').map((tile, index) => (index === parseInt(removedTileId,0)) ? prevTileValue : tile).join('');
-            this.setState({
-                board : newBoard,
-                movesArray: newMovesArray
-            });
-            this.localStorageHandler(newBoard, newMovesArray);
-        }
-    }
-
     localStorageHandler(currentGameState, allMoves) {
         localStorage.setItem('board', currentGameState);
         localStorage.setItem('initialboard', this.state.initialBoard);
@@ -132,9 +113,6 @@ class App extends Component {
                     initialBoard={this.state.initialBoard.split('')} 
                     onChange={(value, id) => this.onChangeHandler(value, id)}
                 />
-                {
-                    this.state.board ? <button onClick={() => this.undoHandler()} className="undo-button">UNDO</button> : null
-                }
             </div>
         );
     }

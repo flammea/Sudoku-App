@@ -6,25 +6,4 @@
     border: 3px solid #636e72;
     margin: 20px auto;
 }
-button {
-    margin-right: 50px;
-    margin-bottom: 20px;
-    width: 100px;
-    height: 30px;
-    border-radius: 10px;
-    border: 2px solid #6c5ce7;
-    color: #6c5ce7;
-    background-color: #FFFFFF;
-    text-transform: uppercase;
-    font-family: 'Sunflower';
-    font-size: 15px;
-    transition: 0.3s;
-}
- button:hover {
-    background-color: #6c5ce7;
-    color: #FFFFFF;
-    cursor: pointer;
-}
-button:focus {
-    outline: none;
-}
+
