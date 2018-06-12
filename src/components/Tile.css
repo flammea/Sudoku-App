@@ -39,11 +39,6 @@ input:disabled {
     background-color: #00b894;
     color: #FFFFFF;
 }
-input::-webkit-inner-spin-button, 
-input::-webkit-outer-spin-button { 
-    -webkit-appearance: none;
-    margin: 0;
-}
 input:disabled:hover {
     background-color: #00b894;
     cursor: auto;
