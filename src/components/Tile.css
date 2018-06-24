@@ -17,6 +17,7 @@ input:nth-child(n+46){
 input:nth-child(n+55){
     border-bottom: 1px solid #636e72;
 }
+
 /*
 INPUT
 */
@@ -39,7 +40,12 @@ input:disabled {
     background-color: #00b894;
     color: #FFFFFF;
 }
+
 input:disabled:hover {
     background-color: #00b894;
     cursor: auto;
+}
+
+input:focus {
+    outline: none;
 }

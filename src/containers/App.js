@@ -50,7 +50,7 @@ class App extends Component {
                 error : ''
             });
         } else {
-            this.setState({error: "Sorry, but not all entered numbers are correct."});
+            this.setState({error: "Sorry, but not all numbers are correct."});
         }
     }
 
@@ -61,7 +61,7 @@ class App extends Component {
             } else if (sudoku.solve(this.state.board)) {
                 this.setState({error: "So far so good!"});
             } else {
-                this.setState({error: "Sorry, but not all entered numbers are correct."});
+                this.setState({error: "Sorry, but not all numbers are correct."});
             }
         }   
     }

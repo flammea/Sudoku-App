@@ -4,7 +4,7 @@ import styles from './Board.css';
 
 const Board = (props) => {
     return (
-    	<div className={props.board != "" ? "board" : null}>
+        <div className={props.board.length != "" ? "board" : styles.Boardhidden}>
 	        <div className={styles.Board}>
 	            {
 	            props.board.map((tile, index) => {
@@ -15,11 +15,11 @@ const Board = (props) => {
 	                        key={index} 
 	                        id={index} 
 	                        onChange={props.onChange} 
-	                        initialBoard={props.initialBoard.map(tile => {
-	                            if (tile === ".") {
-	                                tile = "";
+	                        initialBoard={props.initialBoard.map(mytile => {
+	                            if (mytile === ".") {
+	                                mytile = "";
 	                            } 
-	                            return tile;
+	                            return mytile;
 	                        })}
 	                    />
 	                )

@@ -8409,7 +8409,7 @@ var App = (function (_Component) {
                     error: ''
                 });
             } else {
-                this.setState({ error: "Sorry, but not all entered numbers are correct." });
+                this.setState({ error: "Sorry, but not all numbers are correct." });
             }
         }
     }, {
@@ -8421,7 +8421,7 @@ var App = (function (_Component) {
                 } else if (_sudokuUmd2.default.solve(this.state.board)) {
                     this.setState({ error: "So far so good!" });
                 } else {
-                    this.setState({ error: "Sorry, but not all entered numbers are correct." });
+                    this.setState({ error: "Sorry, but not all numbers are correct." });
                 }
             }
         }
@@ -8443,29 +8443,6 @@ var App = (function (_Component) {
             var allMoves = this.state.movesArray.concat([{ id: id, value: value }]);
             this.setState({ movesArray: allMoves });
             this.localStorageHandler(array, allMoves);
-        }
-    }, {
-        key: 'undoHandler',
-        value: function undoHandler() {
-            var movesArrayLength = this.state.movesArray.length;
-            if (movesArrayLength) {
-                var removedTileId = this.state.movesArray[movesArrayLength - 1].id;
-                var newMovesArray = this.state.movesArray.slice(0, movesArrayLength - 1);
-                var prevTileValueArray = newMovesArray.filter((function (move) {
-                    return move.id === removedTileId;
-                }));
-
-                var prevTileValue = prevTileValueArray.length > 0 && prevTileValueArray[prevTileValueArray.length - 1].value !== "" ? prevTileValueArray[prevTileValueArray.length - 1].value : ".";
-
-                var newBoard = this.state.board.split('').map((function (tile, index) {
-                    return index === parseInt(removedTileId, 0) ? prevTileValue : tile;
-                })).join('');
-                this.setState({
-                    board: newBoard,
-                    movesArray: newMovesArray
-                });
-                this.localStorageHandler(newBoard, newMovesArray);
-            }
         }
     }, {
         key: 'localStorageHandler',
@@ -8519,14 +8496,7 @@ var App = (function (_Component) {
                     onChange: function onChange(value, id) {
                         return _this2.onChangeHandler(value, id);
                     }
-                }),
-                this.state.board ? _react2.default.createElement(
-                    'button',
-                    { onClick: function onClick() {
-                            return _this2.undoHandler();
-                        }, className: 'undo-button' },
-                    'UNDO'
-                ) : null
+                })
             );
         }
     }]);
@@ -8544,7 +8514,7 @@ exports.default = App;
 
 
 Object.defineProperty(exports, "__esModule", {
-    value: true
+				value: true
 });
 
 var _react = __webpack_require__(1);
@@ -8562,27 +8532,29 @@ var _Board2 = _interopRequireDefault(_Board);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var Board = function Board(props) {
-    return _react2.default.createElement(
-        'div',
-        { className: _Board2.default.Board },
-        props.board.map((function (tile, index) {
-            if (tile === ".") {
-                tile = "";
-            }
-            return _react2.default.createElement(_Tile2.default, {
-                value: tile,
-                key: index,
-                id: index,
-                onChange: props.onChange,
-                initialBoard: props.initialBoard.map((function (tile) {
-                    if (tile === ".") {
-                        tile = "";
-                    }
-                    return tile;
-                }))
-            });
-        }))
-    );
+				return _react2.default.createElement(
+								'div',
+								{ className: props.board.length != "" ? "board" : _Board2.default.Boardhidden },
+								_react2.default.createElement(
+												'div',
+												{ className: _Board2.default.Board },
+												props.board.map((function (tile, index) {
+
+																return _react2.default.createElement(_Tile2.default, {
+																				value: tile,
+																				key: index,
+																				id: index,
+																				onChange: props.onChange,
+																				initialBoard: props.initialBoard.map((function (mytile) {
+																								if (mytile === ".") {
+																												mytile = "";
+																								}
+																								return mytile;
+																				}))
+																});
+												}))
+								)
+				);
 };
 
 exports.default = Board;
@@ -8684,7 +8656,7 @@ exports = module.exports = __webpack_require__(6)(false);
 
 
 // module
-exports.push([module.i, "/*Styles to make sudoku grid*/\r\ninput:nth-child(3n+3){\r\n    border-right: 3px solid #636e72;\r\n}\r\ninput:nth-child(n+19){\r\n    border-bottom: 3px solid #636e72;\r\n}\r\ninput:nth-child(n+28){\r\n    border-bottom: 1px solid #636e72;\r\n}\r\ninput:nth-child(n+46){\r\n    border-bottom: 3px solid #636e72;\r\n}\r\ninput:nth-child(n+55){\r\n    border-bottom: 1px solid #636e72;\r\n}\r\n/*Styles for single input*/\r\n\r\ninput {\r\n    text-align: center;\r\n    width: 50px;\r\n    height: 50px;\r\n    box-sizing: border-box;\r\n    border: 1px solid #636e72;\r\n    font-size: 18px;\r\n}\r\n\r\ninput:hover {\r\n    background-color: #636e72;\r\n    color: #FFFFFF;\r\n    cursor: pointer;\r\n}\r\ninput:disabled {\r\n    background-color: #00b894;\r\n    color: #FFFFFF;\r\n}\r\ninput::-webkit-inner-spin-button, \r\ninput::-webkit-outer-spin-button { \r\n    -webkit-appearance: none;\r\n    margin: 0;\r\n}\r\ninput:disabled:hover {\r\n    background-color: #00b894;\r\n    cursor: auto;\r\n}", ""]);
+exports.push([module.i, "/*\r\nGRID\r\n*/\r\n\r\ninput:nth-child(3n+3){\r\n    border-right: 3px solid #636e72;\r\n}\r\ninput:nth-child(n+19){\r\n    border-bottom: 3px solid #636e72;\r\n}\r\ninput:nth-child(n+28){\r\n    border-bottom: 1px solid #636e72;\r\n}\r\ninput:nth-child(n+46){\r\n    border-bottom: 3px solid #636e72;\r\n}\r\ninput:nth-child(n+55){\r\n    border-bottom: 1px solid #636e72;\r\n}\r\n\r\n/*\r\nINPUT\r\n*/\r\n\r\ninput {\r\n    text-align: center;\r\n    width: 50px;\r\n    height: 50px;\r\n    box-sizing: border-box;\r\n    border: 1px solid #636e72;\r\n    font-size: 18px;\r\n}\r\n\r\ninput:hover {\r\n    background-color: #636e72;\r\n    color: #FFFFFF;\r\n    cursor: pointer;\r\n}\r\ninput:disabled {\r\n    background-color: #00b894;\r\n    color: #FFFFFF;\r\n}\r\n\r\ninput:disabled:hover {\r\n    background-color: #00b894;\r\n    cursor: auto;\r\n}\r\n\r\ninput:focus {\r\n    outline: none;\r\n}", ""]);
 
 // exports
 
@@ -8843,11 +8815,12 @@ exports = module.exports = __webpack_require__(6)(false);
 
 
 // module
-exports.push([module.i, "/*Styles for section board*/\r\n._1EkDFwFP3qUn0X4Wa-767W {\r\n    display: flex;\r\n    flex-wrap: wrap;\r\n    width: 450px;\r\n    border: 3px solid #636e72;\r\n    margin: 20px auto;\r\n}\r\nbutton {\r\n    margin-right: 50px;\r\n    margin-bottom: 20px;\r\n    width: 100px;\r\n    height: 30px;\r\n    border-radius: 10px;\r\n    border: 2px solid #6c5ce7;\r\n    color: #6c5ce7;\r\n    background-color: #FFFFFF;\r\n    text-transform: uppercase;\r\n    font-family: 'Sunflower';\r\n    font-size: 15px;\r\n    transition: 0.3s;\r\n}\r\n button:hover {\r\n    background-color: #6c5ce7;\r\n    color: #FFFFFF;\r\n    cursor: pointer;\r\n}\r\nbutton:focus {\r\n    outline: none;\r\n}\r\n", ""]);
+exports.push([module.i, "/*\r\nBOARD\r\n*/\r\n._1EkDFwFP3qUn0X4Wa-767W {\r\n    display: flex;\r\n    flex-wrap: wrap;\r\n    width: 450px;\r\n    border: 3px solid #636e72;\r\n    margin: 20px auto;\r\n}\r\n\r\n.k4M7DxOyxKxmrykYjxKXZ {\r\n    display: none;\r\n}\r\n\r\n", ""]);
 
 // exports
 exports.locals = {
-	"Board": "_1EkDFwFP3qUn0X4Wa-767W"
+	"Board": "_1EkDFwFP3qUn0X4Wa-767W",
+	"Boardhidden": "k4M7DxOyxKxmrykYjxKXZ"
 };
 
 /***/ }),
@@ -8876,97 +8849,93 @@ var Navigation = function Navigation(props) {
         'div',
         { className: _Navigation2.default.Navigation },
         _react2.default.createElement(
+            'button',
+            { onClick: function onClick() {
+                    return props.newGameHandler();
+                } },
+            'New Game'
+        ),
+        _react2.default.createElement(
+            'button',
+            { onClick: function onClick() {
+                    return props.restartNewGame();
+                } },
+            'Restart'
+        ),
+        _react2.default.createElement(
+            'button',
+            { onClick: function onClick() {
+                    return props.solveSudoku();
+                } },
+            'Solve'
+        ),
+        _react2.default.createElement(
+            'button',
+            { onClick: function onClick() {
+                    return props.checkSudoku();
+                } },
+            'Check'
+        ),
+        props.error ? _react2.default.createElement(
             'div',
-            { className: 'nav' },
+            null,
             _react2.default.createElement(
-                'button',
-                { onClick: function onClick() {
-                        return props.newGameHandler();
-                    } },
-                'New Game'
-            ),
+                'p',
+                { className: 'error-msg' },
+                props.error
+            )
+        ) : null,
+        props.newGameClicked ? _react2.default.createElement(
+            'div',
+            null,
             _react2.default.createElement(
-                'button',
-                { onClick: function onClick() {
-                        return props.restartNewGame();
-                    } },
-                'Restart'
-            ),
-            _react2.default.createElement(
-                'button',
-                { onClick: function onClick() {
-                        return props.solveSudoku();
-                    } },
-                'Solve'
-            ),
-            _react2.default.createElement(
-                'button',
-                { onClick: function onClick() {
-                        return props.checkSudoku();
-                    } },
-                'Check'
-            ),
-            props.error ? _react2.default.createElement(
-                'div',
+                'h1',
                 null,
-                _react2.default.createElement(
-                    'p',
-                    { className: 'error-msg' },
-                    props.error
-                )
-            ) : null,
-            props.newGameClicked ? _react2.default.createElement(
-                'div',
-                null,
-                _react2.default.createElement(
-                    'h1',
-                    null,
-                    'Select level:'
-                ),
-                _react2.default.createElement(
-                    'button',
-                    { onClick: function onClick(e) {
-                            return props.startNewGame(e.target.textContent);
-                        } },
-                    'easy'
-                ),
-                _react2.default.createElement(
-                    'button',
-                    { onClick: function onClick(e) {
-                            return props.startNewGame(e.target.textContent);
-                        } },
-                    'medium'
-                ),
-                _react2.default.createElement(
-                    'button',
-                    { onClick: function onClick(e) {
-                            return props.startNewGame(e.target.textContent);
-                        } },
-                    'hard'
-                ),
-                _react2.default.createElement(
-                    'button',
-                    { onClick: function onClick(e) {
-                            return props.startNewGame(e.target.textContent);
-                        } },
-                    'very-hard'
-                ),
-                _react2.default.createElement(
-                    'button',
-                    { onClick: function onClick(e) {
-                            return props.startNewGame(e.target.textContent);
-                        } },
-                    'insane'
-                ),
-                _react2.default.createElement(
-                    'button',
-                    { onClick: function onClick(e) {
-                            return props.startNewGame(e.target.textContent);
-                        } },
-                    'inhuman'
-                )
-            ) : null
-        )
+                'Select level:'
+            ),
+            _react2.default.createElement(
+                'button',
+                { onClick: function onClick(e) {
+                        return props.startNewGame(e.target.textContent);
+                    } },
+                'Easy'
+            ),
+            _react2.default.createElement(
+                'button',
+                { onClick: function onClick(e) {
+                        return props.startNewGame(e.target.textContent);
+                    } },
+                'Medium'
+            ),
+            _react2.default.createElement(
+                'button',
+                { onClick: function onClick(e) {
+                        return props.startNewGame(e.target.textContent);
+                    } },
+                'Hard'
+            ),
+            _react2.default.createElement(
+                'button',
+                { onClick: function onClick(e) {
+                        return props.startNewGame(e.target.textContent);
+                    } },
+                'Very-hard'
+            ),
+            _react2.default.createElement(
+                'button',
+                { onClick: function onClick(e) {
+                        return props.startNewGame(e.target.textContent);
+                    } },
+                'Insane'
+            ),
+            _react2.default.createElement(
+                'button',
+                { onClick: function onClick(e) {
+                        return props.startNewGame(e.target.textContent);
+                    } },
+                'Inhuman'
+            )
+        ) : null
     );
 };
 
@@ -9031,7 +9000,7 @@ exports = module.exports = __webpack_require__(6)(false);
 exports.push([module.i, "@import url(https://fonts.googleapis.com/css?family=Sunflower:300);", ""]);
 
 // module
-exports.push([module.i, "/*Styles for section navigation*/\r\n._3Bgl_S4VxS81oN1SPIl5dm button {\r\n    margin-right: 50px;\r\n    margin-bottom: 20px;\r\n    width: 100px;\r\n    height: 30px;\r\n    border-radius: 10px;\r\n    border: 2px solid #6c5ce7;\r\n    color: #6c5ce7;\r\n    background-color: #FFFFFF;\r\n    text-transform: uppercase;\r\n    font-family: 'Sunflower';\r\n    font-size: 15px;\r\n    transition: 0.3s;\r\n}\r\n button:hover {\r\n    background-color: #6c5ce7;\r\n    color: #FFFFFF;\r\n    cursor: pointer;\r\n}\r\nbutton:focus {\r\n    outline: none;\r\n}\r\np {\r\n    font-size: 18px;\r\n    display: inline-block;\r\n    width: 450px;\r\n    padding: 10px 0;\r\n    border: 2px solid #fd79a8;\r\n}\r\n", ""]);
+exports.push([module.i, "/*\r\nNAVIGATION\r\n*/\r\n._3Bgl_S4VxS81oN1SPIl5dm button {\r\n    margin-right: 50px;\r\n    margin-bottom: 20px;\r\n    width: 100px;\r\n    height: 30px;\r\n    border-radius: 10px;\r\n    border: 2px solid #6c5ce7;\r\n    color: #6c5ce7;\r\n    background-color: #FFFFFF;\r\n    text-transform: uppercase;\r\n    font-family: 'Sunflower';\r\n    font-size: 15px;\r\n    transition: 0.3s;\r\n}\r\n._3Bgl_S4VxS81oN1SPIl5dm button:hover {\r\n    background-color: #6c5ce7;\r\n    color: #FFFFFF;\r\n    cursor: pointer;\r\n}\r\n._3Bgl_S4VxS81oN1SPIl5dm button:focus {\r\n    outline: none;\r\n}\r\n._3Bgl_S4VxS81oN1SPIl5dm p {\r\n    font-size: 18px;\r\n    display: inline-block;\r\n    width: 450px;\r\n    padding: 10px 0;\r\n    border: 2px solid #fd79a8;\r\n}\r\n", ""]);
 
 // exports
 exports.locals = {
@@ -9908,7 +9877,7 @@ exports = module.exports = __webpack_require__(6)(false);
 exports.push([module.i, "@import url(https://fonts.googleapis.com/css?family=Sunflower:300);", ""]);
 
 // module
-exports.push([module.i, "body {\r\n    box-sizing: border-box;\r\n    text-align: center;\r\n    font-family: 'Sunflower';\r\n}\r\n\r\n/*Styles for section title*/\r\nh1 {\r\n    font-size: 40px;\r\n    letter-spacing: 5px;\r\n    color: #6c5ce7;\r\n    font-family: \"Sunflower\";\r\n}\r\n", ""]);
+exports.push([module.i, "body {\r\n    box-sizing: border-box;\r\n    text-align: center;\r\n    font-family: 'Sunflower';\r\n}\r\n\r\n/*\r\nTITLE\r\n*/\r\nh1 {\r\n    font-size: 40px;\r\n    letter-spacing: 5px;\r\n    color: #6c5ce7;\r\n    font-family: \"Sunflower\";\r\n}\r\n", ""]);
 
 // exports
 
